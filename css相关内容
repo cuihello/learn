@@ -1,0 +1,197 @@
+#### 布局方式
+* 表格布局
+表格中同一行的单元格行高总是一致的，所以“表格布局”可以避免“浮动布局”时出现的“底部对不齐”情况。但现在很少用，也不推荐使用
+示例代码
+```
+<table>
+    <tr>
+        <td>
+            <!--左侧栏内容-->
+        </td>
+
+        <td>
+            <!--右侧栏内容-->
+        </td>
+    </tr>
+</table>
+```
+* float布局
+浮动元素是脱离文档流的，但不脱离文本流
+示例代码
+```
+<style type="text/css">
+        .wrap1{max-width: 1000px;}
+        div{
+              min-height: 200px;
+          }
+          .left{
+              float: left;
+              width: 300px;
+              background: red;
+         }
+         .right{
+             float: right;
+             width: 300px;
+             background: blue;
+         }
+         .center{
+             background: pink;
+         }
+
+     </style>
+     <div class="wrap1">
+         <div class="left">left</div>
+         <div class="right">right</div>
+         <div class="center">浮动布局</div>   <!-- 这里不能与上面的右浮动互换位置，否则会被块元素挤下一行-->
+     </div>
+```
+* 浮动元素导致的问题
+会使父级元素高度塌陷
+示例代码
+```
+<!DOCTYPE html>
+ 2 <html lang="en">
+ 3 <head>
+ 4     <meta charset="UTF-8">
+ 5     <title>CSS 布局</title>
+ 6 </head>
+ 7 <style>
+ 8 *{
+ 9     margin: 0;
+10     padding: 0;
+11 }
+12 .container{
+13     width: 200px;
+14     background-color:red;
+15 }
+16
+17 .left{
+18     background-color: yellow;
+19     float: left;    /*float会将行元素转变成块元素display:inline-block;*/
+20     height: 50px;
+21     width:50px;
+22 }
+23 .right{
+24     background-color: yellow;
+25     float: right;    /*float会将行元素转变成块元素display:inline-block;*/
+26     height: 50px;
+27     width:50px;
+28 }
+29 </style>
+30 <body>
+31     <div class="container">
+32         <span class="left">left</span>
+33         <span>center</span>
+34         <span class="right">right</span>
+35     </div>
+36     <div class="container" style="height: 200px;background: blue">
+37     </div>
+38 </body>
+39 </html>
+```
+原因分析
+子元素默认会撑开父级元素的宽高，但是子元素设置了浮动之后，就不会撑开父元素了，从而导致了父级元素高度塌陷。
+解决方法
+1. 父元素设置 overflow: auto 或者 overflow: hidden
+2. 给父元素加一个 after 伪类（清除浮动）
+```
+.container::after{
+        content:'';
+        clear:both;
+        display:block;
+        visibility:hidden;
+        height:0;
+    }
+```
+
+* 定位
+定位允许您从正常的文档流布局中取出元素，并使它们具有不同的行为，例如放在另一个元素的上面，或者始终保持在浏览器视窗内的同一位置
+1. 静态定位
+```
+<p class="positioned"> hello world </p>
+<style>
+  .positioned {
+    position: static;
+    background: yellow;
+   }
+</style>
+```
+静态定位是默认行为
+2. 相对定位
+相对定位是我们将要看的第一个位置类型。 它与静态定位非常相似，占据在正常的文档流中，除了你仍然可以修改它的最终位置，包括让它与页面上的其他元素重叠
+`position:relative`
+可以通过left、right、top、bottom来改变它相对自身的位置
+3. 绝对定位
+`position:absolute`
+如果所有的父元素都没有显式地定义position属性，那么所有的父元素默认情况下position属性都是static。结果，绝对定位元素会被包含在初始块容器中。这个初始块容器有着和浏览器视口一样的尺寸，并且<html>元素也被包含在这个容器里面。简单来说，绝对定位元素会被放在<html>元素的外面，并且根据浏览器视口来定位。
+4. 固定定位
+这与绝对定位的工作方式完全相同，只有一个主要区别：绝对定位固定元素是相对于 <html> 元素或其最近的定位祖先，而固定定位固定元素则是相对于浏览器视口本身。 这意味着您可以创建固定的有用的UI项目，如持久导航菜单
+5. position: sticky
+position: sticky，是一个比其他属性要新一些的属性。这基本上是相对位置和固定位置之间的混合，其允许定位的元件像它被相对定位一样动作，直到其滚动到某一阈值点（例如，从视口顶部10像素），之后它变得固定
+[详细了解定位](https://developer.mozilla.org/zh-CN/docs/Learn/CSS/CSS_layout/%E5%AE%9A%E4%BD%8D)
+* flex布局
+采用Flex布局的元素，称为Flex容器（flex container），简称“容器”。它的所有子元素自动成为容器成员，成为flex项目（flex item），简称“项目”。
+块级元素
+```
+.box{
+    display:flex;
+}
+```
+行内元素
+```
+.box{
+    display:inline-flex;
+}
+```
+webkit内核的浏览器，必需加上-webkit前缀
+```
+.box{
+    display:-webkit-flex;
+    display:flex;
+}
+```
+设为flex布局以后，子元素的float、clear和vertical-align属性将失效
+
+设置了flex布局的元素称为容器，容器默认存在两根轴：水平的主轴（main axis）和垂直的交叉轴（cross axis）。主轴的开始位置（与边框 的交叉点）叫做main start，结束位置叫做main end；交叉轴的开始位置叫做cross start，结束位置叫做cross end。
+项目默认沿主轴排列。单个项目占据的主轴空间叫做main size，占据的交叉轴空间叫做cross size。
+
+容器属性
+1. flex-derection
+row（默认值）：主轴为水平方向，起点在左端
+row-reverse:主轴为水平方向，起点在右端
+column:主轴为垂直方向，起点在上沿
+column-reverse:主轴为垂直方向，起点在下沿
+2. flex-wrap
+nowrap（默认）：不换行
+wrap:换行，第一行在上方
+wrap-reverse:换行，在第一行的下方
+3. flex-flow
+flex-flow属性是flex-direction属性和flex-wrap属性的简写形式，默认 row nowrap。
+4. justify-content属性
+justify-content属性定义了项目在主轴上的对齐方式
+flex-start（默认值）：左对齐
+flex-end：右对齐
+center：居中
+space-between:两端对齐，项目之间的间隔都相等
+space-around：每个项目两侧的间隔相等。所以，项目之间的间隔比项目与边框的间隔大一倍。
+5. align-items
+flex-start：交叉轴的起点对齐
+flex-end:交叉轴的终点对齐
+center：交叉轴的中点对齐
+baseline：项目的第一行文字的基线对齐。
+stretch（默认值）：如果项目未设置高度或设为auto，将占满整个容器的高度。
+6. align-center
+flex-start：与交叉轴的起点对齐。
+flex-end：与交叉轴的终点对齐。
+center：与交叉轴的中点对齐。
+space-between：与交叉轴两端对齐，轴线之间的间隔平均分布。
+space-around：每根轴线两侧的间隔都相等。所以，轴线之间的间隔比轴线与边框的间隔大一倍。
+stretch（默认值）：轴线占满整个交叉轴。
+
+##### grid布局
+网格布局（Grid）是最强大的 CSS 布局方案。
+它将网页划分成一个个网格，可以任意组合不同的网格，做出各种各样的布局。以前，只能通过复杂的 CSS 框架达到的效果，现在浏览器内置了。
+[网格布局详细介绍](http://www.ruanyifeng.com/blog/2019/03/grid-layout-tutorial.html)
+
+#### 盒子模型
+html文档中的每个元素都被描绘成矩形盒子，这些矩形盒子通过一个模型来描述其占用空间，这个模型称为盒模型。盒模型通过四个边界来描述：margin（外边距），border（边框），padding（内边距），content（内容区域）

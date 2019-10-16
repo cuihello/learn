@@ -1,0 +1,77 @@
+## Git使用总结
+可以cd d:(进入到某个磁盘下)
+使用mkdir 可以在指定磁盘或者文件夹下创建新的文件
+
++ git config --global user.name “用户名”
++ git config --global user.email “邮箱”
+
+以上两条命令为本地所有仓库绑定了用户名和邮箱
+
+Pwd 可以显示当前所在文件目录
+
++ git init 把当前文件变成git可以管理的仓库（运行这个命令之后这个文件内会多出一个.git的文件夹是git用来跟踪管理版本的）
++ git add 后跟文件，把文件添加到暂存区里
++ git commit -m ‘可以添加提交描述’  执行这条命令把文件提交到本地git仓库
++ git status 用来查看未提交的文件
++ git diff 文件名 可以查看修改的内容
++ git log 可以用来查看修改历史
++ git reset --hard HEAD^表示向前推一个版本 ^的个数表示前推的版本数，太多的话可以使用 git reset --hard HEAD~前推数字
++ git reset --hard 版本号 可以恢复到指定版本
++ git reflog 可以查看版本号
++ git checkout -- 文件名（如test.txt）撤销操作，如果没有提交到暂存区，则恢复最初的状态，如果已经提交到暂存区，则恢复提交前的状态。(--这个不能少，少了就变成创建分支了)
+
+本地仓库和远程仓库之间的传输是通过SSH加密的
+
++ ssh-keygen -t rsa –C “邮箱“创建 .ssh文件
++ git remote add origin 根github的仓库名把本地仓库和远端仓库相关联
++ git push -u origin master 把本地的master推到GitHub仓库
++ git checkout -b 分支名 创建新分支并切换分支
++ git branch 查看当前分支
++ git checkout 分支名 切换到指定分支
++ git merge dev  （切换到主分支执行这个命令把分支dev合并到主分支上)
+cat 文件名 可以打印出文件内容
++ git branch -d 名字 删除指定分支
++ git stash 把当前工作现场隐藏起来
++ git stash list 用来查看隐藏的工作现场
++ git stash apply恢复现场，恢复后不删除
++ git stash drop 删除恢复后的内容
++ git stash pop 恢复现场并删除
++ git remove 查看远程库信息
++ git remove -v 查看远程库详细信息
++ git pull --rebase origin master把远程库中的更新合并到本地库中，并取消刚才的push
++ git pull origin master 把远程库中的更新合并到本地
+
+#### git rebase
++ git rebase -i 将本地的多次提交合并为一个，以简化提交历史。本地有多个提交时,如果不进行这一步,在git rebase master时会多次解决冲突(最坏情况下,每一个提交都会相应解决一个冲突)
++ git rebase master 将master最新的分支同步到本地，这个过程可能需要手动解决冲突(如果进行了上一步的话,只用解决一次冲突)
+然后切换到master分支，git merge将本地的local分支内容合并到master分支
++ git push将master分支的提交上传
+本地开发分支可以灵活管理
+~~~
+git checkout master
+git pull
+git checkout local
+git rebase -i HEAD~2  //合并提交 --- 2表示合并两个
+git rebase master---->解决冲突--->git rebase --continue
+git checkout master
+git merge local
+git push
+~~~
+
+#### 常用git stash命令：
+1. git stash save "save message"  : 执行存储时，添加备注，方便查找，只有git stash 也要可以的，但查找时不方便识别。
+2. git stash list  ：查看stash了哪些存储
+3. git stash show ：显示做了哪些改动，默认show第一个存储,如果要显示其他存贮，后面加stash@{$num}，比如第二个 git stash show stash@{1}
+4. git stash show -p : 显示第一个存储的改动，如果想显示其他存存储，命令：git stash show  stash@{$num}  -p ，比如第二个：git stash show  stash@{1}  -p
+5. git stash apply :应用某个存储,但不会把存储从存储列表中删除，默认使用第一个存储,即stash@{0}，如果要使用其他个，git stash apply stash@{$num} ， 比如第二个：git stash apply stash@{1} 
+6. git stash pop ：命令恢复之前缓存的工作目录，将缓存堆栈中的对应stash删除，并将对应修改应用到当前的工作目录下,默认为第一个stash,即stash@{0}，如果要应用并删除其他stash，命令：git stash pop stash@{$num} ，比如应用并删除第二个：git stash pop stash@{1}
+7. git stash drop stash@{$num} ：丢弃stash@{$num}存储，从列表中删除这个存储
+8. git stash clear ：删除所有缓存的stash
+* git branch -a 查看所有分支  之后按推出
+* git fetch -p 把没有用到的分支清除
+* git reflog 查看操作日志
+* git push origin fir:zhuofirst 把本地分支推到远程分支，可以不同命fir是本地分支，zhuofirst是远程分支。
+
+* git fetch --all // fetch所有分支上的内容，也可以选择只备份一部分内容
+* git reset --hard origin/master // 重置本地分支（这里master要修改为对应的分支名）
+* git pull

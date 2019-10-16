@@ -1,0 +1,27 @@
+### 前端优化
+* css在头部引入
+* js在尾部引入
+* 对文件进行压缩
+* 图片懒加载
+* 异步请求
+* 设置合理的缓存
+* 减少DOM操作
+* 减少重绘和重排
+* 样式预处理
+* 选择器不要嵌套太多
+
+### 让元素垂直居中的方法
++ 父级元素设置相对定位，子级元素设置绝对定位，left:50%;top:50%;transform:translate(-50%,-50%)
++ 父级display:flex;子级margin:auto
+~~~
+.container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+~~~
+
+### 阻止事件冒泡的方法
++ 原生的event.stopPropagation//阻止冒泡行为，但不阻止默认行为
++ e.preventDefault()//阻止默认行为，但不阻止冒泡行为
++ Return false//既阻止冒泡行为，又阻止默认行为
