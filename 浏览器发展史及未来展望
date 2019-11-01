@@ -17,10 +17,111 @@
 ### js引擎
 S引擎负责解析Javascript语言，执行javascript语言来实现网页的动态效果
 
-**V8引擎**
-* V8引擎是一个JavaScript引擎实现，最初由一些语言方面专家设计，后被谷歌收购，随后谷歌对其进行了开源。
-* V8使用C++开发，在运行JavaScript之前，相比其它的JavaScript的引擎转换成字节码或解释执行，V8将其编译成原生机器码（IA-32, x86-64, ARM, or MIPS CPUs），并且使用了如内联缓存（inline caching）等方法来提高性能
-* V8支持众多操作系统，如windows、linux、android等，也支持其他硬件架构，如IA32,X64,ARM等，具有很好的可移植和跨平台特性。
+### V8引擎
+V8引擎是一个JavaScript引擎实现，最初由一些语言方面专家设计，后被谷歌收购，随后谷歌对其进行了开源。
+V8使用C++开发，在运行JavaScript之前，相比其它的JavaScript的引擎转换成字节码或解释执行，V8将其编译成原生机器码（IA-32, x86-64, ARM, or MIPS CPUs），并且使用了如内联缓存（inline caching）等方法来提高性能
+V8支持众多操作系统，如windows、linux、android等，也支持其他硬件架构，如IA32,X64,ARM等，具有很好的可移植和跨平台特性。
+
+### 浏览器的内核
+1.IE浏览器内核：Trident内核，也是俗称的IE内核
+2.Chrome浏览器内核：统称为Chromium内核或Chrome内核，以前是Webkit内核，现在是Blink内核；
+3.Firefox浏览器内核：Gecko内核，俗称Firefox内核；
+4.Safari浏览器内核：Webkit内核；
+5.Opera浏览器内核：最初是自己的Presto内核，后来是Webkit，现在是Blink内核；
+6.360浏览器、猎豹浏览器内核：IE+Chrome双内核；
+7.搜狗、遨游、QQ浏览器内核：Trident（兼容模式）+Webkit（高速模式）；
+8.百度浏览器、世界之窗内核：IE内核；
+9.2345浏览器内核：以前是IE内核，现在也是IE+Chrome双内核；
+
+### 浏览器兼容性
+由于内核的不同导致了浏览器的兼容问题:
+不同浏览器的内核也不尽相同，所以各个浏览器对网页的解析存在一定的差异。最典型的就是ie8、9、10对于css的版本的要求、jquery的要求。
+常见的兼容性问题：
+1.不同浏览器的标签默认的外补丁（margin）和内补丁（padding）不同
+解决方案：css里增加通配符*{margin：0；padding：0}
+2.IE6双边距问题；在IE6中设置了float，同时又设置margin，就会出现边距问题
+解决方案：设置display：inline；
+3.当标签的高度设置小于10px，在IE6、IE7中会超出自己设置的高度
+解决方案：超出高度的标签设置overflow：hidden，或者设置line-height的值小于你的设置高度
+4.图片默认有间距
+解决方案：使用float为img布局
+5.IE9以下浏览器不能使用opacity
+解决方案：opacity：0.5；filter：alfha（opacity=50）；filter：progid：DXlmageTransform.Microsoft.Alfha(style=0,opacity=50);
+6.边距重叠问题；当相邻两个元素都设置了margin边距时，margin将取最大值，舍弃最小值；
+7.cursor：hand显示手型在safari上不支持
+解决方案：统一使用cursor：pointer
+8.两个块级元素，父元素设置了overflow：auto；子元素设置了position：relative；且高度大于父元素，在IE6、IE7会被隐藏而不是溢出；
+解决方案：父级元素设置position：relative
+9.const问题
+说明：Firefox下，可以使用const关键字来定义常量；IE下，只能使用var关键字来定义常量。
+解决方法：统一使用var关键字来定义常量。
+10.event.srcElement问题
+问题说明：IE下，event对象有srcElement属性，但是没有target属性；Firefox下，event对象有target属性，但是没有srcElement属性。
+解决方法：使用srcObj = event.srcElement?event.srcElement:event.target;
+11.事件绑定
+IE:dom.attachEvent();
+其他浏览器：dom.addEventListener();
+标准浏览器采用事件捕获的方式对应IE的事件冒泡机制（即标准由最外元素至最内元素或者IE由最内元素到最外元素）最后标准方亦觉得IE这方面的比较合理，所以便将事件冒泡纳入了标准，这也是addEventListener第三个参数的由来，而且事件冒泡作为了默认值。
+12.操作tr的html
+在ie9以下，不能操作tr的innerHTML
+13.ajax略有不同
+IE：ActiveXObject
+其他：xmlHttpReuest
+14.对象宽高赋值问题
+问题说明：FireFox中类似obj.style.height = imgObj.height的语句无效。
+
+CSS中的兼容性
+1.cursor:hand VS cursor:pointer;firefox不支持hand，但ie支持pointer
+解决方法: 统一使用pointer
+2.innerText在IE中能正常工作，但在FireFox中却不行.
+需用textContent。
+解决方法:
+if(navigator.appName.indexOf("Explorer") > -1){
+document.getElementById('element').innerText = "my text";
+} else{
+document.getElementById('element').textContent = "my text";
+}
+3.CSS透明
+IE:filter:progid:DXImageTransform.Microsoft.Alpha(style=0,opacity=60)。
+FF：opacity:0.6
+4.css中的width和padding
+在IE7和FF中width宽度不包括padding，在Ie6中包括padding.
+5.FF和IEBOX模型解释不一致导致相差2px
+box.style{width:100;border1px;}
+ie理解为box.width =100
+ff理解为box.width =100 + 1*2 = 102 //加上边框2px
+解决方法：div{margin:30px!important;margin:28px;}
+注意这两个margin的顺序一定不能写反， IE不能识别!important这个属性，但别的浏览器可以识别。所以在IE下其实解释成这样：div{maring:30px;margin:28px}
+重复定义的话按照最后一个来执行，所以不可以只写margin:XXpx!important;
+6.IE5 和IE6的BOX解释不一致
+IE5下div{width:300px;margin:0 10px 0 10px;}
+div 的宽度会被解释为300px-10px(右填充)-10px(左填充)，最终div的宽度为280px，而在IE6和其他浏览器上宽度则是以 300px+10px(右填充)+10px(左填充)=320px来计算的。这时我们可以做如下修改div{width:300px!important;width /**/:340px;margin:0 10px 0 10px}
+7.ul和ol列表缩进问题
+消除ul、ol等列表的缩进时，样式应写成：list-style:none;margin:0px;padding:0px;
+经验证，在IE中，设置margin:0px可以去除列表的上下左右缩进、空白以及列表编号或圆点，设置padding对样式没有影响；在 Firefox 中，设置margin:0px仅仅可以去除上下的空白，设置padding:0px后仅仅可以去掉左右缩进，还必须设置list- style:none才能去除列表编号或圆点。也就是说，在IE中仅仅设置margin:0px即可达到最终效果，而在Firefox中必须同时设置margin:0px、 padding:0px以及list-style:none三项才能达到最终效果。
+8.元素水平居中问题
+FF: margin:0auto;
+IE: 父级{ text-align:center;}
+9.Div的垂直居中问题
+vertical-align:middle; 将行距增加到和整个DIV一样高：line-height:200px;然后插入文字，就垂直居中了。缺点是要控制内容不要换行.
+10.margin加倍的问题
+设置为float的div在ie下设置的margin会加倍。这是一个ie6都存在的bug。解决方案是在这个div里面加上display:inline;
+11.IE与宽度和高度的问题
+IE不认得min-这个定义，但实际上它把正常的width和height当作有min的情况来使。这样问题就大了，如果只用宽度和高度，正常的浏览器里这两个值就不会变，如果只用min-width和min-height的话，IE下面根本等于没有设置宽度和高度。
+12.页面的最小宽度
+如上一个问题，IE不识别min，要实现最小宽度，可用下面的方法：
+#container{ min-width: 600px;width:expression(document.body.clientWidth＜ 600? "600px": "auto" );}
+第一个min-width是正常的；但第2行的width使用了Javascript，这只有IE才认得，这也会让你的HTML文档不太正规。它实际上通过Javascript的判断来实现最小宽度。
+13.DIV浮动IE文本产生3象素的bug
+左边对象浮动，右边采用外补丁的左边距来定位，右边对象内的文本会离左边有3px的间距.
+#box{ float:left; width:800px;}
+#left{ float:left; width:50%;}
+#right{ width:50%;}
+*html #left{ margin-right:-3px; //这句是关键}
+<div id="box">
+<div id="left">＜/div>
+<div id="right">＜/div>
+</div>
 
 ### app与webview
 webview 用来展示网页的 view 组件，该组件是你运行自己的浏览器或者在你的线程中展示线上内容的基础。使用 webkit 渲染引擎来展示，并且支持前进后退等基于浏览历史，放大缩小，等更多功能
