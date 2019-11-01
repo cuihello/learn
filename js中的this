@@ -1,0 +1,222 @@
+#### this含义
+this可以用在构造函数之中，表示实例对象。除此之外，this还可以用在别的场合。但不管是什么场合，this都有一个共同点：它总是返回一个对象。
+简单说，this就是属性或方法“当前”所在的对象。
+**this可以是动态的它指向动态对象**
+
+#### 动态this
+```
+function f() {
+  return '姓名：'+ this.name;
+}
+
+var A = {
+  name: '张三',
+  describe: f
+};
+
+var B = {
+  name: '李四',
+  describe: f
+};
+
+A.describe() // "姓名：张三"
+B.describe() // "姓名：李四"
+```
+上面代码中，函数f内部使用了this关键字，随着f所在的对象不同，this的指向也不同。
+只要函数被赋给另一个变量，this的指向就会变。
+
+#### this的实质
+JavaScript 语言之所以有 this 的设计，跟内存里面的数据结构有关系
+`var obj = { foo:  5 };`
+上面的代码将一个对象赋值给变量obj。JavaScript 引擎会先在内存里面，生成一个对象{ foo: 5 }，然后把这个对象的内存地址赋值给变量obj。也就是说，变量obj是一个地址（reference）。后面如果要读取obj.foo，引擎先从obj拿到内存地址，然后再从该地址读出原始的对象，返回它的foo属性。
+原始的对象以字典结构保存，每一个属性名都对应一个属性描述对象。举例来说，上面例子的foo属性，实际上是以下面的形式保存的。
+```
+{
+  foo: {
+    [[value]]: 5
+    [[writable]]: true
+    [[enumerable]]: true
+    [[configurable]]: true
+  }
+}
+```
+#### this使用场景
+* 全局环境
+全局环境使用this，它指的就是顶层对象window
+
+```
+this === window // true
+function f() {
+  console.log(this === window);
+}
+f() // true
+```
+
+上面代码说明，不管是不是在函数内部，只要是在全局环境下运行，this就是指顶层对象window
+
+* 构造函数
+构造函数中的this，指的是实例对象。
+
+```
+var Obj = function (p) {
+  this.p = p;
+};
+```
+
+上面代码定义了一个构造函数Obj。由于this指向实例对象，所以在构造函数内部定义this.p，就相当于定义实例对象有一个p属性。
+
+* 对象的方法
+如果对象的方法里面包含this，this的指向就是方法运行时所在的对象。该方法赋值给另一个对象，就会改变this的指向。
+
+```
+var obj ={
+  foo: function () {
+    console.log(this);
+  }
+};
+
+obj.foo() // obj
+```
+上面代码中，obj.foo方法执行时，它内部的this指向obj。
+但是，下面这几种用法，都会改变this的指向。
+
+```
+// 情况一
+(obj.foo = obj.foo)() // window
+// 情况二
+(false || obj.foo)() // window
+// 情况三
+(1, obj.foo)() // window
+```
+上面代码中，obj.foo就是一个值。这个值真正调用的时候，运行环境已经不是obj了，而是全局环境，所以this不再指向obj。
+可以这样理解，JavaScript 引擎内部，obj和obj.foo储存在两个内存地址，称为地址一和地址二。obj.foo()这样调用时，是从地址一调用地址二，因此地址二的运行环境是地址一，this指向obj。但是，上面三种情况，都是直接取出地址二进行调用，这样的话，运行环境就是全局环境，因此this指向全局环境。上面三种情况等同于下面的代码。
+
+ ```
+ // 情况一
+(obj.foo = function () {
+  console.log(this);
+})()
+// 等同于
+(function () {
+  console.log(this);
+})()
+
+// 情况二
+(false || function () {
+  console.log(this);
+})()
+
+// 情况三
+(1, function () {
+  console.log(this);
+})()
+ ```
+ 如果this所在的方法不在对象的第一层，这时this只是指向当前一层的对象，而不会继承更上面的层。
+
+ ```
+ var a = {
+  p: 'Hello',
+  b: {
+    m: function() {
+      console.log(this.p);
+    }
+  }
+};
+
+a.b.m() // undefined
+ ```
+
+ 上面代码中，a.b.m方法在a对象的第二层，该方法内部的this不是指向a，而是指向a.b，因为实际执行的是下面的代码。
+
+ ```
+ var b = {
+  m: function() {
+   console.log(this.p);
+  }
+};
+
+var a = {
+  p: 'Hello',
+  b: b
+};
+
+(a.b).m() // 等同于 b.m()
+ ```
+
+ 如果要达到预期效果，只有写成下面这样
+
+ ```
+ var a = {
+  b: {
+    m: function() {
+      console.log(this.p);
+    },
+    p: 'Hello'
+  }
+};
+ ```
+ 如果这时将嵌套对象内部的方法赋值给一个变量，this依然会指向全局对象。
+ ```
+ var a = {
+  b: {
+    m: function() {
+      console.log(this.p);
+    },
+    p: 'Hello'
+  }
+};
+
+var hello = a.b.m;
+hello() // undefined
+ ```
+ 上面代码中，m是多层对象内部的一个方法。为求简便，将其赋值给hello变量，结果调用时，this指向了顶层对象。为了避免这个问题，可以只将m所在的对象赋值给hello，这样调用时，this的指向就不会变。
+ ```
+ var hello = a.b;
+hello.m() // Hello
+ ```
+#### 使用this注意点
+* 避免多层this的使用
+```
+var o = {
+  f1: function () {
+    console.log(this);
+    var f2 = function () {
+      console.log(this);
+    }();
+  }
+}
+
+o.f1()
+// Object
+// Window
+```
+* 避免数组处理中的this
+```
+var o = {
+  v: 'hello',
+  p: [ 'a1', 'a2' ],
+  f: function f() {
+    this.p.forEach(function (item) {
+      console.log(this.v + ' ' + item);
+    });
+  }
+}
+
+o.f()
+// undefined a1
+// undefined a2
+```
+上面代码中，foreach方法的回调函数中的this，其实是指向window对象，因此取不到o.v的值。原因跟上一段的多层this是一样的，就是内层的this不指向外部，而指向顶层对象。
+
+*避免回调中的this
+回调函数中的this往往会改变指向，最好避免使用。
+```
+var o = new Object();
+o.f = function () {
+  console.log(this === o);
+}
+
+// jQuery 的写法
+$('#button').on('click', o.f);
+```
+[更多this](https://wangdoc.com/javascript/oop/this.html)
