@@ -1,0 +1,250 @@
+##### 浏览器环境概述
+JavaScript 是浏览器的内置脚本语言。也就是说，浏览器内置了 JavaScript 引擎，并且提供各种接口，让 JavaScript 脚本可以控制浏览器的各种功能。一旦网页内嵌了 JavaScript 脚本，浏览器加载网页，就会去执行脚本，从而达到操作浏览器的目的，实现网页的各种动态效果。
+**代码嵌入网页的方法**
+* script元素直接嵌入代码。
+* script标签加载外部脚本
+* 事件属性
+* URL 协议
+
+##### script 元素工作原理
+浏览器加载 JavaScript 脚本，主要通过script元素完成。正常的网页加载流程是这样的。
+
+1. 浏览器一边下载 HTML 网页，一边开始解析。也就是说，不等到下载完，就开始解析。
+2. 解析过程中，浏览器发现script元素，就暂停解析，把网页渲染的控制权转交给 JavaScript 引擎。
+3. 如果script元素引用了外部脚本，就下载该脚本再执行，否则就直接执行代码。
+4. JavaScript 引擎执行完毕，控制权交还渲染引擎，恢复往下解析 HTML 网页。
+加载外部脚本时，浏览器会暂停页面渲染，等待脚本下载并执行完成后，再继续渲染。原因是 JavaScript 代码可以修改 DOM，所以必须把控制权让给它，否则会导致复杂的线程竞赛的问题。
+
+如果外部脚本加载时间很长（一直无法完成下载），那么浏览器就会一直等待脚本下载完成，造成网页长时间失去响应，浏览器就会呈现“假死”状态，这被称为“阻塞效应”。
+
+为了避免这种情况，较好的做法是将script标签都放在页面底部，而不是头部。这样即使遇到脚本失去响应，网页主体的渲染也已经完成了，用户至少可以看到内容，而不是面对一张空白的页面。如果某些脚本代码非常重要，一定要放在页面头部的话，最好直接将代码写入页面，而不是连接外部脚本文件，这样能缩短加载时间。
+
+脚本文件都放在网页尾部加载，还有一个好处。因为在 DOM 结构生成之前就调用 DOM 节点，JavaScript 会报错，如果脚本都在网页尾部加载，就不存在这个问题，因为这时 DOM 肯定已经生成了。
+
+**defer属性**
+为了解决脚本文件下载阻塞网页渲染的问题，一个方法是对script元素加入defer属性。它的作用是延迟脚本的执行，等到 DOM 加载生成后，再执行脚本。
+```
+<script src="a.js" defer></script>
+<script src="b.js" defer></script>
+```
+defer属性的运行流程如下。
+
+1. 浏览器开始解析 HTML 网页。
+2. 解析过程中，发现带有defer属性的script元素。
+3. 浏览器继续往下解析 HTML 网页，同时并行下载script元素加载的外部脚本。
+4. 浏览器完成解析 HTML 网页，此时再回过头执行已经下载完成的脚本。
+有了defer属性，浏览器下载脚本文件的时候，不会阻塞页面渲染。下载的脚本文件在DOMContentLoaded事件触发前执行（即刚刚读取完/html标签），而且可以保证执行顺序就是它们在页面上出现的顺序。
+
+对于内置而不是加载外部脚本的script标签，以及动态生成的script标签，defer属性不起作用。另外，使用defer加载的外部脚本不应该使用document.write方法。
+
+**async属性**
+解决“阻塞效应”的另一个方法是对script元素加入async属性
+```
+<script src="a.js" async></script>
+<script src="b.js" async></script>
+```
+async属性的作用是，使用另一个进程下载脚本，下载时不会阻塞渲染。
+
+1. 浏览器开始解析 HTML 网页。
+2. 解析过程中，发现带有async属性的script标签。
+3. 浏览器继续往下解析 HTML 网页，同时并行下载script标签中的外部脚本。
+4. 脚本下载完成，浏览器暂停解析 HTML 网页，开始执行下载的脚本。
+5. 脚本执行完毕，浏览器恢复解析 HTML 网页。
+async属性可以保证脚本下载的同时，浏览器继续渲染。需要注意的是，一旦采用这个属性，就无法保证脚本的执行顺序。哪个脚本先下载结束，就先执行那个脚本。另外，使用async属性的脚本文件里面的代码，不应该使用document.write方法。
+
+defer属性和async属性到底应该使用哪一个？
+
+一般来说，如果脚本之间没有依赖关系，就使用async属性，如果脚本之间有依赖关系，就使用defer属性。如果同时使用async和defer属性，后者不起作用，浏览器行为由async属性决定。
+**脚本的动态加载**
+script元素还可以动态生成，生成后再插入页面，从而实现脚本的动态加载
+```
+['a.js', 'b.js'].forEach(function(src) {
+  var script = document.createElement('script');
+  script.src = src;
+  document.head.appendChild(script);
+});
+```
+这种方法的好处是，动态生成的script标签不会阻塞页面渲染，也就不会造成浏览器假死。但是问题在于，这种方法无法保证脚本的执行顺序，哪个脚本文件先下载完成，就先执行哪个。
+
+如果想避免这个问题，可以设置async属性为false。
+```
+['a.js', 'b.js'].forEach(function(src) {
+  var script = document.createElement('script');
+  script.src = src;
+  script.async = false;
+  document.head.appendChild(script);
+});
+```
+上面的代码不会阻塞页面渲染，而且可以保证b.js在a.js后面执行。不过需要注意的是，在这段代码后面加载的脚本文件，会因此都等待b.js执行完成后再执行。
+
+如果想为动态加载的脚本指定回调函数，可以使用下面的写法。
+```
+function loadScript(src, done) {
+  var js = document.createElement('script');
+  js.src = src;
+  js.onload = function() {
+    done();
+  };
+  js.onerror = function() {
+    done(new Error('Failed to load script ' + src));
+  };
+  document.head.appendChild(js);
+}
+```
+**加载使用的协议**
+如果不指定协议，浏览器默认采用 HTTP 协议下载
+[更多参考](https://wangdoc.com/javascript/bom/engine.html)
+
+**window 对象**
+浏览器里面，window对象（注意，w为小写）指当前的浏览器窗口。它也是当前页面的顶层对象，即最高一层的对象，所有其他对象都是它的下属。一个变量如果未声明，那么默认就是顶层对象的属性。
+```
+a = 1;
+window.a // 1
+```
+上面代码中，a是一个没有声明就直接赋值的变量，它自动成为顶层对象的属性。
+
+window有自己的实体含义，其实不适合当作最高一层的顶层对象，这是一个语言的设计失误。最早，设计这门语言的时候，原始设想是语言内置的对象越少越好，这样可以提高浏览器的性能。因此，语言设计者 Brendan Eich 就把window对象当作顶层对象，所有未声明就赋值的变量都自动变成window对象的属性。这种设计使得编译阶段无法检测出未声明变量，但到了今天已经没有办法纠正了。
+**window 对象的属性**
+window.name属性是一个字符串，表示当前浏览器窗口的名字。窗口不一定需要名字，这个属性主要配合超链接和表单的target属性使用
+window.closed属性返回一个布尔值，表示窗口是否关闭。
+window.self和window.window属性都指向窗口本身。这两个属性只读
+window.frames属性返回一个类似数组的对象，成员为页面内所有框架窗口，包括frame元素和iframe元素。window.frames[0]表示页面中第一个框架窗口。
+
+如果iframe元素设置了id或name属性，那么就可以用属性值，引用这个iframe窗口。比如<iframe name="myIFrame">可以用frames['myIFrame']或者frames.myIFrame来引用。
+
+frames属性实际上是window对象的别名。
+[window对象更多属性](https://wangdoc.com/javascript/bom/window.html)
+
+**Navigator 对象的属性**
+navigator.userAgent属性返回浏览器的 User Agent 字符串，表示浏览器的厂商和版本信息。
+通过userAgent属性识别浏览器，不是一个好办法。因为必须考虑所有的情况（不同的浏览器，不同的版本），非常麻烦，而且用户可以改变这个字符串。这个字符串的格式并无统一规定，也无法保证未来的适用性，各种上网设备层出不穷，难以穷尽。所以，现在一般不再通过它识别浏览器了，而是使用“功能识别”方法，即逐一测试当前浏览器是否支持要用到的 JavaScript 功能。
+
+不过，通过userAgent可以大致准确地识别手机浏览器，方法就是测试是否包含mobi字符串。
+```
+var ua = navigator.userAgent.toLowerCase();
+
+if (/mobi/i.test(ua)) {
+  // 手机浏览器
+} else {
+  // 非手机浏览器
+}
+```
+
+Navigator.plugins属性返回一个类似数组的对象，成员是 Plugin 实例对象，表示浏览器安装的插件，比如 Flash、ActiveX 等。
+```
+var pluginsLength = navigator.plugins.length;
+
+for (var i = 0; i < pluginsLength; i++) {
+  console.log(navigator.plugins[i].name);
+  console.log(navigator.plugins[i].filename);
+  console.log(navigator.plugins[i].description);
+  console.log(navigator.plugins[i].version);
+}
+```
+navigator.onLine属性返回一个布尔值，表示用户当前在线还是离线（浏览器断线）
+`navigator.onLine // true`
+有时，浏览器可以连接局域网，但是局域网不能连通外网。这时，有的浏览器的onLine属性会返回true，所以不能假定只要是true，用户就一定能访问互联网。不过，如果是false，可以断定用户一定离线。
+
+用户变成在线会触发online事件，变成离线会触发offline事件，可以通过window.ononline和window.onoffline指定这两个事件的回调函数。
+
+Navigator.geolocation属性返回一个 Geolocation 对象，包含用户地理位置的信息。注意，该 API 只有在 HTTPS 协议下可用，否则调用下面方法时会报错。
+
+**Screen 对象**
+Screen 对象表示当前窗口所在的屏幕，提供显示设备的信息。window.screen属性指向这个对象。
+
+该对象有下面的属性。
+
+1. Screen.height：浏览器窗口所在的屏幕的高度（单位像素）。除非调整显示器的分辨率，否则这个值可以看作常量，不会发生变化。显示器的分辨率与浏览器设置无关，缩放网页并不会改变分辨率。
+2. Screen.width：浏览器窗口所在的屏幕的宽度（单位像素）。
+3. Screen.availHeight：浏览器窗口可用的屏幕高度（单位像素）。因为部分空间可能不可用，比如系统的任务栏或者 Mac 系统屏幕底部的 Dock 区，这个属性等于height减去那些被系统组件的高度。
+4. Screen.availWidth：浏览器窗口可用的屏幕宽度（单位像素）。
+5. Screen.pixelDepth：整数，表示屏幕的色彩位数，比如24表示屏幕提供24位色彩。
+6. Screen.colorDepth：Screen.pixelDepth的别名。严格地说，colorDepth 表示应用程序的颜色深度，pixelDepth 表示屏幕的颜色深度，绝大多数情况下，它们都是同一件事。
+7. Screen.orientation：返回一个对象，表示屏幕的方向。该对象的type属性是一个字符串，表示屏幕的具体方向，landscape-primary表示横放，landscape-secondary表示颠倒的横放，portrait-primary表示竖放，portrait-secondary。
+
+##### cookie
+Cookie 是服务器保存在浏览器的一小段文本信息，一般大小不能超过4KB。浏览器每次向服务器发出请求，就会自动附上这段信息。
+
+Cookie 主要保存状态信息，以下是一些主要用途。
+
+* 对话（session）管理：保存登录、购物车等需要记录的信息。
+* 个性化信息：保存用户的偏好，比如网页的字体大小、背景色等等。
+* 追踪用户：记录和分析用户行为。
+Cookie 不是一种理想的客户端储存机制。它的容量很小（4KB），缺乏数据操作接口，而且会影响性能。客户端储存应该使用 Web storage API 和 IndexedDB。只有那些每次请求都需要让服务器知道的信息，才应该放在 Cookie 里面。
+
+每个 Cookie 都有以下几方面的元数据。
+
+* Cookie 的名字
+* Cookie 的值（真正的数据写在这里面）
+* 到期时间（超过这个时间会失效）
+* 生效的路径（默认为当前网址）
+
+举例来说，用户访问网址www.example.com，服务器在浏览器写入一个 Cookie。这个 Cookie 的所属域名为www.example.com，生效路径为根路径/。如果 Cookie 的生效路径设为/forums，那么这个 Cookie 只有在访问www.example.com/forums及其子路径时才有效。以后，浏览器访问某个路径之前，就会找出对该域名和路径有效，并且还没有到期的 Cookie，一起发送给服务器。
+
+用户可以设置浏览器不接受 Cookie，也可以设置不向服务器发送 Cookie。window.navigator.cookieEnabled属性返回一个布尔值，表示浏览器是否打开 Cookie 功能。
+
+Domain属性指定浏览器发出 HTTP 请求时，哪些域名要附带这个 Cookie。如果没有指定该属性，浏览器会默认将其设为当前域名，这时子域名将不会附带这个 Cookie。比如，example.com不设置 Cookie 的domain属性，那么sub.example.com将不会附带这个 Cookie。如果指定了domain属性，那么子域名也会附带这个 Cookie。如果服务器指定的域名不属于当前域名，浏览器会拒绝这个 Cookie。
+
+Path属性指定浏览器发出 HTTP 请求时，哪些路径要附带这个 Cookie。只要浏览器发现，Path属性是 HTTP 请求路径的开头一部分，就会在头信息里面带上这个 Cookie。比如，PATH属性是/，那么请求/docs路径也会包含该 Cookie。当然，前提是域名必须一致。
+
+Secure属性指定浏览器只有在加密协议 HTTPS 下，才能将这个 Cookie 发送到服务器。另一方面，如果当前协议是 HTTP，浏览器会自动忽略服务器发来的Secure属性。该属性只是一个开关，不需要指定值。如果通信是 HTTPS 协议，该开关自动打开。
+
+HttpOnly属性指定该 Cookie 无法通过 JavaScript 脚本拿到，主要是document.cookie属性、XMLHttpRequest对象和 Request API 都拿不到该属性。这样就防止了该 Cookie 被脚本读到，只有浏览器发出 HTTP 请求时，才会带上该 Cookie。
+
+浏览器的 Cookie 新增加了一个SameSite属性，用来防止 CSRF 攻击和用户追踪。
+
+Cookie 往往用来存储用户的身份信息，恶意网站可以设法伪造带有正确 Cookie 的 HTTP 请求，这就是 CSRF 攻击。举例来说，用户登陆了银行网站your-bank.com，银行服务器发来了一个 Cookie。
+
+Strict最为严格，完全禁止第三方 Cookie，跨站点时，任何情况下都不会发送 Cookie。换言之，只有当前网页的 URL 与请求目标一致，才会带上 Cookie。
+
+document.cookie属性用于读写当前网页的 Cookie。
+
+读取的时候，它会返回当前网页的所有 Cookie，前提是该 Cookie 不能有HTTPOnly属性。
+`document.cookie // "foo=bar;baz=bar"`
+上面代码从document.cookie一次性读出两个 Cookie，它们之间使用分号分隔。必须手动还原，才能取出每一个 Cookie 的值
+
+```
+var cookies = document.cookie.split(';');
+
+for (var i = 0; i < cookies.length; i++) {
+  console.log(cookies[i]);
+}
+// foo=bar
+// baz=bar
+```
+
+document.cookie属性是可写的，可以通过它为当前网站添加 Cookie。
+document.cookie = 'fontSize=14';
+
+写入的时候，Cookie 的值必须写成key=value的形式。注意，等号两边不能有空格。另外，写入 Cookie 的时候，必须对分号、逗号和空格进行转义（它们都不允许作为 Cookie 的值），这可以用encodeURIComponent方法达到。
+
+但是，document.cookie一次只能写入一个 Cookie，而且写入并不是覆盖，而是添加。
+
+```
+document.cookie = 'test1=hello';
+document.cookie = 'test2=world';
+document.cookie
+// test1=hello;test2=world
+```
+
+document.cookie读写行为的差异（一次可以读出全部 Cookie，但是只能写入一个 Cookie），与 HTTP 协议的 Cookie 通信格式有关。浏览器向服务器发送 Cookie 的时候，Cookie字段是使用一行将所有 Cookie 全部发送；服务器向浏览器设置 Cookie 的时候，Set-Cookie字段是一行设置一个 Cookie。
+
+写入 Cookie 的时候，可以一起写入 Cookie 的属性。
+`document.cookie = "foo=bar; expires=Fri, 31 Dec 2020 23:59:59 GMT";`
+
+各个属性的写入注意点如下。
+
+* path属性必须为绝对路径，默认为当前路径。
+* domain属性值必须是当前发送 Cookie 的域名的一部分。比如，当前域名是example.com，就不能将其设为foo.com。该属性默认为当前的一级域名（不含二级域名）。
+* max-age属性的值为秒数。
+* expires属性的值为 UTC 格式，可以使用Date.prototype.toUTCString()进行日期格式转换。
+
+**document.cookie写入 Cookie 的例子如下。**
+```
+document.cookie = 'fontSize=14; '
+  + 'expires=' + someDate.toGMTString() + '; '
+  + 'path=/subdirectory; '
+  + 'domain=*.example.com';
+```
+
+##### XMLHttpRequest 对象
